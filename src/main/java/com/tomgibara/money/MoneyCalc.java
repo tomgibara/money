@@ -481,9 +481,19 @@ public class MoneyCalc implements MoneySource, MoneyCalcSource, Cloneable {
 	
 	@Override
 	public MoneyCalc calc() {
-		return new MoneyCalc(this.type, this.amount);
+		return new MoneyCalc(type, amount);
 	}
-	
+
+	/**
+	 * Opens a new calculation whose initial type and amount are initially equal
+	 * to the current values of this calculation.
+	 * 
+	 * @return a new monetary calculation
+	 */
+	public MoneyCalc calc(int scale) {
+		return new MoneyCalc(scale, roundingMode, type, amount);
+	}
+
 	/**
 	 * Opens a new calculation whose initial type and amount are initially equal
 	 * to the current values of this calculation.
@@ -493,7 +503,7 @@ public class MoneyCalc implements MoneySource, MoneyCalcSource, Cloneable {
 	
 	@Override
 	public MoneyCalc calc(int scale, RoundingMode roundingMode) {
-		return new MoneyCalc(scale, roundingMode, this.type, this.amount);
+		return new MoneyCalc(scale, roundingMode, type, amount);
 	}
 	
 	// object methods

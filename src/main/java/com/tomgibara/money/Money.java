@@ -168,6 +168,17 @@ public class Money implements MoneySource, MoneyCalcSource, Comparable<Money> {
 		return new MoneyCalc(type, amount);
 	}
 	
+	/**
+	 * Opens a calculation whose initial type and amount will match those of
+	 * this object.
+	 * 
+	 * @return a new monetary calculation
+	 */
+	
+	@Override
+	public MoneyCalc calc(int scale) {
+		return new MoneyCalc(scale, null, type, amount);
+	}
 	
 	/**
 	 * Opens a calculation whose initial type and amount will match those of

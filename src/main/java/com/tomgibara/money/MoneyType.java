@@ -238,6 +238,18 @@ public class MoneyType implements MoneySource, MoneyCalcSource {
 	 */
 
 	@Override
+	public MoneyCalc calc(int scale) {
+		return new MoneyCalc(scale, null, this, BigDecimal.ZERO);
+	}
+
+	/**
+	 * A convenience method that creates a new monetary calculation with the
+	 * initial value of zero.
+	 * 
+	 * @return a new monetary calculation initialized to zero
+	 */
+
+	@Override
 	public MoneyCalc calc(int scale, RoundingMode roundingMode) {
 		return new MoneyCalc(scale, roundingMode, this, BigDecimal.ZERO);
 	}
