@@ -132,4 +132,14 @@ public class MoneyCalcTest extends TestCase {
 		assertEquals(money, type.calc().add(source).money());
 	}
 	
+	public void testClone() {
+		MoneyType type = new MoneyType(Locale.US);
+		MoneyCalc c1 = type.calc();
+		MoneyCalc c2 = type.calc(2, RoundingMode.CEILING);
+		MoneyCalc c3 = type.money(100).calc();
+		assertEquals(c1, c1.clone());
+		assertEquals(c2, c2.clone());
+		assertEquals(c3, c3.clone());
+	}
+	
 }

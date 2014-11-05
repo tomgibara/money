@@ -48,9 +48,8 @@ import java.math.RoundingMode;
  * 
  */
 
-//TODO make cloneable
 //TODO add a set method that takes money?
-public class MoneyCalc implements MoneySource, MoneyCalcSource {
+public class MoneyCalc implements MoneySource, MoneyCalcSource, Cloneable {
 
 	// statics
 
@@ -85,6 +84,12 @@ public class MoneyCalc implements MoneySource, MoneyCalcSource {
 		this(-1, null, type, amount);
 	}
 
+	private MoneyCalc(MoneyCalc that) {
+		this.scale = that.scale;
+		this.roundingMode = that.roundingMode;
+		this.type = that.type;
+		this.amount = that.amount;
+	}
 	
 	// accessors
 	
@@ -510,6 +515,10 @@ public class MoneyCalc implements MoneySource, MoneyCalcSource {
 	
 	public String toString() {
 		return type.format(money());
+	}
+	
+	public MoneyCalc clone() {
+		return new MoneyCalc(this);
 	}
 	
 	// package scoped methods
