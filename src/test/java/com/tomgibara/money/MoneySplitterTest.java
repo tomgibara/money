@@ -29,10 +29,11 @@ public class MoneySplitterTest extends TestCase {
 	}
 	
 	private void testSplit(MoneyCalc calc, int parts) {
+		MoneyCalc copy = calc.calc();// make arbitrary arbitrary precision copy of calc amount
 		Money[] split = calc.splitter().setParts(parts).split(); // split it
-		calc = calc.calc(); // switch to arbitrary precision
-		for (Money m : split) calc.subtract(m); // subtract away all parts
-		assertTrue(calc.getAmount().signum() == 0); // check we have no remainder
+		assertEquals(calc.clone().zero(), calc); // check no money remains in calc
+		for (Money m : split) copy.subtract(m); // subtract away all parts
+		assertTrue(copy.getAmount().signum() == 0); // check we have no remainder
 	}
 
 	public void testSplitProportions() {
@@ -40,22 +41,22 @@ public class MoneySplitterTest extends TestCase {
 		Money money = type.money(100);
 		MoneyCalc calc = money.calc(2, null);
 		Money[] ms;
-		ms = calc.splitter().setProportions(BigDecimal.valueOf(5)).split();
+		ms = calc.clone().splitter().setProportions(BigDecimal.valueOf(5)).split();
 		assertEquals(money, ms[0]);
-		ms = calc.splitter().setProportions(BigDecimal.valueOf(1), BigDecimal.valueOf(1)).split();
+		ms = calc.clone().splitter().setProportions(BigDecimal.valueOf(1), BigDecimal.valueOf(1)).split();
 		assertEquals(type.money(50), ms[0]);
 		assertEquals(type.money(50), ms[1]);
-		ms = calc.splitter().setProportions(BigDecimal.valueOf(1), BigDecimal.valueOf(4)).split();
+		ms = calc.clone().splitter().setProportions(BigDecimal.valueOf(1), BigDecimal.valueOf(4)).split();
 		assertEquals(type.money(20), ms[0]);
 		assertEquals(type.money(80), ms[1]);
-		ms = calc.splitter().setProportions(BigDecimal.valueOf(4), BigDecimal.valueOf(1)).split();
+		ms = calc.clone().splitter().setProportions(BigDecimal.valueOf(4), BigDecimal.valueOf(1)).split();
 		assertEquals(type.money(80), ms[0]);
 		assertEquals(type.money(20), ms[1]);
-		ms = calc.splitter().setProportions(BigDecimal.valueOf(1), BigDecimal.valueOf(9), BigDecimal.valueOf(90)).split();
+		ms = calc.clone().splitter().setProportions(BigDecimal.valueOf(1), BigDecimal.valueOf(9), BigDecimal.valueOf(90)).split();
 		assertEquals(type.money(1), ms[0]);
 		assertEquals(type.money(9), ms[1]);
 		assertEquals(type.money(90), ms[2]);
-		ms = calc.splitter().setProportions(BigDecimal.valueOf(1), BigDecimal.valueOf(1000)).split();
+		ms = calc.clone().splitter().setProportions(BigDecimal.valueOf(1), BigDecimal.valueOf(1000)).split();
 		assertEquals(type.money(0), ms[0]);
 		assertEquals(type.money(100), ms[1]);
 	}
@@ -65,9 +66,15 @@ public class MoneySplitterTest extends TestCase {
 		Money zero = type.calc(2, null).money();
 		Money one = type.money(1).calc(2, null).money();
 		MoneyCalc calc = one.calc(2, null);
-		assertEquals(list(new Money[] {zero, zero, one}), list(calc.splitter().setProportions(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ONE).split()));
-		assertEquals(list(new Money[] {zero, one, zero}), list(calc.splitter().setProportions(BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO).split()));
-		assertEquals(list(new Money[] {one, zero, zero}), list(calc.splitter().setProportions(BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ZERO).split()));
+		assertEquals(list(new Money[] {zero, zero, one}), list(calc.clone().splitter().setProportions(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ONE).split()));
+		assertEquals(list(new Money[] {zero, one, zero}), list(calc.clone().splitter().setProportions(BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO).split()));
+		assertEquals(list(new Money[] {one, zero, zero}), list(calc.clone().splitter().setProportions(BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ZERO).split()));
+	}
+	
+	public void testNonSplit() {
+		MoneyCalc calc = new MoneyType(Locale.US).money(100).calc(2, null);
+		assertEquals(0, calc.splitter().split().length);
+		assertEquals(BigDecimal.valueOf(100, 2), calc.money().getAmount());
 	}
 	
 }

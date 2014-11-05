@@ -2,32 +2,21 @@ package com.tomgibara.money;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
+/**
+ * Allows a calculated monetary amount to be split in by specified proportions.
+ * 
+ * @author tomgibara
+ */
 
 public class MoneySplitter {
 
 	// statics
 
-	private static final Partition FREE = new Partition(-1);
+	private static final Money[] NO_MONIES = new Money[0];
+	private static final Partition FREE = new Partition();
 
-	private static Money[] splitFree(MoneyCalc calc, BigDecimal amount, int parts) {
-		Money[] monies = new Money[parts];
-		BigDecimal remainder = amount;
-		for (int i = parts - 1; i >= 0; i--) {
-			if (i == 0) {
-				monies[i] = calc.money(remainder);
-			} else {
-				BigDecimal share = remainder.divide(BigDecimal.valueOf(i + 1), calc.scale, calc.roundingMode);
-				monies[i] = calc.money(share);
-				remainder = remainder.subtract(share);
-			}
-		}
-		return monies;
-	}
-	
-
-	
 	public static BigDecimal[] toBigDecimalArray(Long... longs) {
 		if (longs == null) throw new IllegalArgumentException("null longs");
 		BigDecimal[] decimals = new BigDecimal[longs.length];
@@ -53,7 +42,6 @@ public class MoneySplitter {
 	private final MoneyCalc calc;
 	private List<Partition> partitions = null;
 	private int parts = 0;
-	private boolean boundedAbove = true;
 
 	// constructors
 	
@@ -62,18 +50,28 @@ public class MoneySplitter {
 	}
 	
 	// accessors
+
+	/**
+	 * The number of parts into which this splitter will distribute the currency
+	 * amount
+	 * 
+	 * @return a number of parts.
+	 */
 	
 	public int getParts() {
 		return parts;
 	}
 
-	public void setBoundedAbove(boolean boundedAbove) {
-		this.boundedAbove = boundedAbove;
-	}
-	
-	public boolean isBoundedAbove() {
-		return boundedAbove;
-	}
+	/**
+	 * Specify the number of parts into which this splitter will divide the
+	 * calculation amount.
+	 * 
+	 * @param parts
+	 *            a non-negative number of parts
+	 * @return the splitter
+	 * @throws IllegalArgumentException
+	 *             if the number of parts is negative
+	 */
 	
 	public MoneySplitter setParts(int parts) {
 		if (parts < 0) throw new IllegalArgumentException("negative parts");
@@ -81,49 +79,83 @@ public class MoneySplitter {
 		return this;
 	}
 	
+	/**
+	 * Sets the relative proportions into which the splitter will distribute the
+	 * calculated monetary amount. If the number of proportions is greater than
+	 * the currently specified number of parts, the number of parts will be
+	 * implicitly increased.
+	 * 
+	 * @param proportions
+	 *            the proportions into which the amount will be split.
+	 * @return the splitter
+	 * @throws IllegalArgumentException
+	 *             if the proportions are null or negative
+	 */
+	
 	public MoneySplitter setProportions(BigDecimal... proportions) {
+		if (proportions == null) throw new IllegalArgumentException("null proportions");
 		for (int i = 0; i < proportions.length; i++) {
 			BigDecimal proportion = proportions[i];
+			if (proportion == null) throw new IllegalArgumentException("null proportion");
 			if (proportion.signum() < 0) throw new IllegalArgumentException("negative proportion");
 			getPartition(i).proportion = proportion;
 		}
 		return growParts(proportions.length);
 	}
 
-	public MoneySplitter setBounds(BigDecimal... bounds) {
-		for (int i = 0; i < bounds.length; i++) {
-			getPartition(i).bound = bounds[i];
-		}
-		return growParts(bounds.length);
-	}
+	/**
+	 * Sets the proportion of an individual part of the split. Specifying a null
+	 * proportion leaves the proportion unspecified.
+	 * 
+	 * @param index
+	 *            the index of the proportion to change
+	 * @param proportions
+	 *            the specified proportion into which the amount will be split.
+	 * @return the splitter
+	 * @throws IllegalArgumentException
+	 *             if index or the proportion is negative
+	 */
 	
 	public MoneySplitter setProportion(int index, BigDecimal proportion) {
-		if (proportion.signum() < 0) throw new IllegalArgumentException("negative proportion");
+		if (index < 0) throw new IllegalArgumentException("negative index");
+		if (proportion != null && proportion.signum() < 0) throw new IllegalArgumentException("negative proportion");
 		getPartition(index).proportion = proportion;
-		return growParts(index + 1);
-	}
-	
-	public MoneySplitter setBound(int index, BigDecimal bound) {
-		getPartition(index).bound = bound;
 		return growParts(index + 1);
 	}
 	
 	// methods
 
+	/**
+	 * Splits the amount of money stored by the calculation from which this
+	 * splitter was obtained. If the number of parts is zero no change will be
+	 * made to the calculation amount and an empty array will be returned,
+	 * otherwise the amount recorded in that calculation will be zeroed and the
+	 * amounts distributed as per the specified proportions.
+	 * 
+	 * @return an array containing the monetary amounts arising from the split.
+	 */
+	
 	public Money[] split() {
-		checkParts();
-		boolean bounded = isBounded();
-		boolean proportioned = isProportioned();
-		if (!bounded && !proportioned) return splitFree();
-		if (!bounded) return splitProportioned();
-		if (!proportioned) return splitBounded();
-		throw new UnsupportedOperationException();
+		if (parts == 0) return NO_MONIES;
+		return isProportioned() ? splitProportioned() : splitFree();
 	}
 	
 	// private utility methods
 	
 	private Money[] splitFree() {
-		return splitFree(calc, calc.getAmount(), parts);
+		Money[] monies = new Money[parts];
+		BigDecimal remainder = calc.getAmount();
+		for (int i = parts - 1; i >= 0; i--) {
+			if (i == 0) {
+				monies[i] = calc.money(remainder);
+			} else {
+				BigDecimal share = remainder.divide(BigDecimal.valueOf(i + 1), calc.scale, calc.roundingMode);
+				monies[i] = calc.money(share);
+				remainder = remainder.subtract(share);
+			}
+		}
+		calc.zero();
+		return monies;
 	}
 	
 	private Money[] splitProportioned() {
@@ -161,11 +193,8 @@ public class MoneySplitter {
 				}
 			}
 		}
+		calc.zero();
 		return monies;
-	}
-	
-	private Money[] splitBounded() {
-		throw new UnsupportedOperationException();
 	}
 	
 	private Partition getPartition(int index) {
@@ -173,43 +202,14 @@ public class MoneySplitter {
 		if (partitions == null) partitions = new ArrayList<Partition>();
 		Partition partition = null;
 		while (partitions.size() <= index) {
-			partition = new Partition(index);
+			partition = new Partition();
 			partitions.add(partition);
 		}
 		return partition == null ? partitions.get(index) : partition;
 	}
 
-//	private Partition[] getConstrainedPartitions() {
-//		if (partitions == null) return new Partition[0];
-//		List<Partition> partitions = new ArrayList<Partition>();
-//		int limit = Math.min(partitions.size(), parts);
-//		for (int i = 0; i < limit; i++) {
-//			Partition partition = getEffectivePartition(i);
-//			if (partition.isConstrained()) {
-//				partitions.add(partition);
-//			}
-//		}
-//		Partition[] array = (Partition[]) partitions.toArray(new Partition[partitions.size()]);
-//		Arrays.sort(array);
-//		return array;
-//	}
-	
 	private MoneySplitter growParts(int size) {
 		return size <= parts ? this : setParts(size);
-	}
-	
-	private void checkParts() {
-		if (parts == 0) throw new IllegalStateException("zero parts");
-	}
-
-	private boolean isBounded() {
-		if (partitions != null) {
-			int limit = Math.min(partitions.size(), parts);
-			for (int i = 0; i < limit; i++) {
-				if (getEffectivePartition(i).isBounded()) return true;
-			}
-		}
-		return false;
 	}
 	
 	private boolean isProportioned() {
@@ -221,17 +221,6 @@ public class MoneySplitter {
 		}
 		return false;
 	}
-	
-//	private int countConstraints() {
-//		int count = 0;
-//		if (partitions != null) {
-//			int limit = Math.min(partitions.size(), parts);
-//			for (int i = 0; i < limit; i++) {
-//				if (getEffectivePartition(i).isConstrained()) count++;
-//			}
-//		}
-//		return count;
-//	}
 	
 	private BigDecimal getEffectiveProportion(int index) {
 		Partition partition = getEffectivePartition(index);
@@ -247,29 +236,12 @@ public class MoneySplitter {
 	
 	// inner classes
 	
-	private static class Partition implements Comparable<Partition> {
+	private static class Partition {
 		
-		final int index;
-		
-		BigDecimal bound;
 		BigDecimal proportion;
-		
-		public Partition(int index) {
-			this.index = index;
-		}
-		
-		boolean isBounded() {
-			return bound != null;
-		}
 		
 		boolean isProportioned() {
 			return proportion != null;
-		}
-		
-		@Override
-		public int compareTo(Partition that) {
-			if (this == that) return 0;
-			throw new UnsupportedOperationException();
 		}
 		
 	}
