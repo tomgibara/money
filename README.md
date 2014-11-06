@@ -33,7 +33,7 @@ The money project is packaged as a single jar with no dependencies.
 The project is hosted on Github from which the following latest files may be
 downloaded:
 
- * Library:  [money-1.2.0jar](https://github.com/tomgibara/money/releases/download/money-1.2.0/money-1.2.0.jar)
+ * Library:  [money-1.2.0-jar](https://github.com/tomgibara/money/releases/download/money-1.2.0/money-1.2.0.jar)
  * Javadocs: [money-1.2.0-javadoc.jar](https://github.com/tomgibara/money/releases/download/money-1.2.0/money-1.2.0-javadoc.jar)
  * Sources:  [money-1.2.0-sources.jar](https://github.com/tomgibara/money/releases/download/money-1.2.0/money-1.2.0-sources.jar)
 
